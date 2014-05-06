@@ -1,12 +1,11 @@
 package org.terasology.math.delaunay;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.terasology.math.geom.LineSegment;
 import org.terasology.math.geom.Vector2d;
-import org.terasology.math.geom.Rectangle;
+import org.terasology.math.geom.Rect2d;
 
 /**
  * The line segment connecting the two Sites is part of the Delaunay
@@ -171,11 +170,10 @@ public final class Edge {
     private Edge() {
     }
 
-
     @Override
-	public String toString() {
+    public String toString() {
         return "Edge [sites " + sites.get(LR.LEFT) + ", " + sites.get(LR.RIGHT)
-                + "; endVertices " + leftVertex + ", " + rightVertex + "]";
+               + "; endVertices " + leftVertex + ", " + rightVertex + "]";
     }
 
     /**
@@ -186,11 +184,11 @@ public final class Edge {
      * @param bounds
      *
      */
-    public void clipVertices(Rectangle bounds) {
-        double xmin = bounds.x;
-        double ymin = bounds.y;
-        double xmax = bounds.right;
-        double ymax = bounds.bottom;
+    public void clipVertices(Rect2d bounds) {
+        double xmin = bounds.minX();
+        double ymin = bounds.minY();
+        double xmax = bounds.maxX();
+        double ymax = bounds.maxY();
 
         Vertex vertex0, vertex1;
         double x0, x1, y0, y1;

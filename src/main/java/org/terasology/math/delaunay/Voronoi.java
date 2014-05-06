@@ -1,33 +1,5 @@
 package org.terasology.math.delaunay;
 
-/*
- * Java implementaition by Connor Clark (www.hotengames.com). Pretty much a 1:1 
- * translation of a wonderful map generating algorthim by Amit Patel of Red Blob Games,
- * which can be found here (http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/)
- * Hopefully it's of use to someone out there who needed it in Java like I did!
- * Note, the only island mode implemented is Radial. Implementing more is something for another day.
- * 
- * FORTUNE'S ALGORTIHIM
- * 
- * This is a java implementation of an AS3 (Flash) implementation of an algorthim
- * originally created in C++. Pretty much a 1:1 translation from as3 to java, save
- * for some necessary workarounds. Original as3 implementation by Alan Shaw (of nodename)
- * can be found here (https://github.com/nodename/as3delaunay). Original algorthim
- * by Steven Fortune (see lisence for c++ implementation below)
- * 
- * The author of this software is Steven Fortune.  Copyright (c) 1994 by AT&T
- * Bell Laboratories.
- * Permission to use, copy, modify, and distribute this software for any
- * purpose without fee is hereby granted, provided that this entire notice
- * is included in all copies of any software which is or includes a copy
- * or modification of this software and in all copies of the supporting
- * documentation for such software.
- * THIS SOFTWARE IS BEING PROVIDED "AS IS", WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTY.  IN PARTICULAR, NEITHER THE AUTHORS NOR AT&T MAKE ANY
- * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
- * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
- */
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,7 +9,7 @@ import java.util.Random;
 import org.terasology.math.geom.Circle;
 import org.terasology.math.geom.LineSegment;
 import org.terasology.math.geom.Vector2d;
-import org.terasology.math.geom.Rectangle;
+import org.terasology.math.geom.Rect2d;
 
 public final class Voronoi {
 
@@ -47,13 +19,13 @@ public final class Voronoi {
     private final List<Edge> _edges = new ArrayList<Edge>();
     // TODO generalize this so it doesn't have to be a rectangle;
     // then we can make the fractal voronois-within-voronois
-    private Rectangle _plotBounds;
+    private Rect2d _plotBounds;
 
-    public Rectangle get_plotBounds() {
+    public Rect2d get_plotBounds() {
         return _plotBounds;
     }
 
-    public Voronoi(List<Vector2d> points, Rectangle plotBounds) {
+    public Voronoi(List<Vector2d> points, Rect2d plotBounds) {
         init(points, plotBounds);
         fortunesAlgorithm();
     }
@@ -65,7 +37,7 @@ public final class Voronoi {
             maxHeight = Math.max(maxHeight, p.getY());
         }
         System.out.println(maxWidth + "," + maxHeight);
-        init(points, new Rectangle(0, 0, maxWidth, maxHeight));
+        init(points, Rect2d.createFromMinAndSize(0, 0, maxWidth, maxHeight));
         fortunesAlgorithm();
     }
 
@@ -74,11 +46,11 @@ public final class Voronoi {
         for (int i = 0; i < numSites; i++) {
             points.add(new Vector2d(r.nextDouble() * maxWidth, r.nextDouble() * maxHeight));
         }
-        init(points, new Rectangle(0, 0, maxWidth, maxHeight));
+        init(points, Rect2d.createFromMinAndSize(0, 0, maxWidth, maxHeight));
         fortunesAlgorithm();
     }
 
-    private void init(List<Vector2d> points, Rectangle plotBounds) {
+    private void init(List<Vector2d> points, Rect2d plotBounds) {
         _sites = new SiteList();
         _sitesIndexedByLocation = new HashMap<Vector2d, Site>();
         addSites(points);
@@ -240,11 +212,11 @@ public final class Voronoi {
         Halfedge lbnd, rbnd, llbnd, rrbnd, bisector;
         Edge edge;
 
-        Rectangle dataBounds = _sites.getSitesBounds();
+        Rect2d dataBounds = _sites.getSitesBounds();
 
         int sqrt_nsites = (int) Math.sqrt(_sites.getLength() + 4);
-        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.y, dataBounds.height, sqrt_nsites);
-        EdgeList edgeList = new EdgeList(dataBounds.x, dataBounds.width, sqrt_nsites);
+        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.minY(), dataBounds.height(), sqrt_nsites);
+        EdgeList edgeList = new EdgeList(dataBounds.minX(), dataBounds.width(), sqrt_nsites);
         List<Halfedge> halfEdges = new ArrayList<Halfedge>();
         List<Vertex> vertices = new ArrayList<Vertex>();
 
@@ -262,13 +234,13 @@ public final class Voronoi {
                 //trace("smallest: new site " + newSite);
 
                 // Step 8:
-                lbnd = edgeList.edgeListLeftNeighbor(newSite.getCoord());	// the Halfedge just to the left of newSite
+                lbnd = edgeList.edgeListLeftNeighbor(newSite.getCoord());    // the Halfedge just to the left of newSite
                 //trace("lbnd: " + lbnd);
-                rbnd = lbnd.edgeListRightNeighbor;		// the Halfedge just to the right
+                rbnd = lbnd.edgeListRightNeighbor;    // the Halfedge just to the right
                 //trace("rbnd: " + rbnd);
-                bottomSite = rightRegion(lbnd, bottomMostSite);		// this is the same as leftRegion(rbnd)
+                bottomSite = rightRegion(lbnd, bottomMostSite);   // this is the same as leftRegion(rbnd)
                 // this Site determines the region containing the new site
-                //trace("new Site is in region of existing site: " + bottomSite);
+              //trace("new Site is in region of existing site: " + bottomSite);
 
                 // Step 9:
                 edge = Edge.createBisectingEdge(bottomSite, newSite);

@@ -19,7 +19,7 @@ final class EdgeList {
         _deltax = deltax;
         _hashsize = 2 * sqrt_nsites;
 
-        _hash = new ArrayList(_hashsize);
+        _hash = new ArrayList<Halfedge>(_hashsize);
 
         // two dummy Halfedges:
         leftEnd = Halfedge.createDummy();

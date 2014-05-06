@@ -16,35 +16,21 @@
 
 package org.terasology.math.geom;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
 /**
- * Defines a line segment
+ * Tests the {@link Circle} class
  * @author Martin Steiger
  */
-public final class LineSegment {
+public class CircleTest {
 
-    private final Vector2d p0;
-    private final Vector2d p1;
-
-    /**
-     * @param p0 the first point
-     * @param p1 the second point
-     */
-    public LineSegment(Vector2d p0, Vector2d p1) {
-        this.p0 = p0;
-        this.p1 = p1;
-    }
-
-    /**
-     * @return the first point
-     */
-    public Vector2d getP0() {
-        return p0;
-    }
-
-    /**
-     * @return the second point
-     */
-    public Vector2d getP1() {
-        return p1;
+    @Test
+    public void testContains() {
+        Circle c = new Circle(3, 5, 2);
+        assertTrue(c.contains(new Vector2d(2, 4)));
+        assertFalse(c.contains(new Vector2d(1, 4)));
     }
 }

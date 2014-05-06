@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.terasology.math.geom.Circle;
 import org.terasology.math.geom.Vector2d;
-import org.terasology.math.geom.Rectangle;
+import org.terasology.math.geom.Rect2d;
 
 final class SiteList {
 
@@ -38,7 +38,7 @@ final class SiteList {
         }
     }
 
-    public Rectangle getSitesBounds() {
+    public Rect2d getSitesBounds() {
         if (sorted == false) {
             Site.sortSites(sites);
             currentIndex = 0;
@@ -46,7 +46,7 @@ final class SiteList {
         }
         double xmin, xmax, ymin, ymax;
         if (sites.isEmpty()) {
-            return new Rectangle(0, 0, 0, 0);
+            return Rect2d.createFromMinAndSize(0, 0, 0, 0);
         }
         xmin = Double.MAX_VALUE;
         xmax = Double.MIN_VALUE;
@@ -62,7 +62,7 @@ final class SiteList {
         ymin = sites.get(0).getY();
         ymax = sites.get(sites.size() - 1).getY();
 
-        return new Rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
+        return Rect2d.createFromMinAndMax(xmin, ymin, xmax, ymax);
     }
 
     public List<Vector2d> siteCoords() {
@@ -92,7 +92,7 @@ final class SiteList {
         return circles;
     }
 
-    public List<List<Vector2d>> regions(Rectangle plotBounds) {
+    public List<List<Vector2d>> regions(Rect2d plotBounds) {
         List<List<Vector2d>> regions = new ArrayList<List<Vector2d>>();
         for (Site site : sites) {
             regions.add(site.region(plotBounds));

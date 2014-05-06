@@ -8,17 +8,17 @@ final class Vertex implements ICoord {
     
     private Vector2d coord;
 
-	private static Vertex create(double x, double y)
-	{
-		if (Double.isNaN(x) || Double.isNaN(y))
-		{
-			return VERTEX_AT_INFINITY;
-		}
-		else
-		{
-			return new Vertex(x, y);
-		}
-	}
+    private static Vertex create(double x, double y)
+    {
+        if (Double.isNaN(x) || Double.isNaN(y))
+        {
+            return VERTEX_AT_INFINITY;
+        }
+        else
+        {
+            return new Vertex(x, y);
+        }
+    }
 
     @Override
     public Vector2d getCoord() {

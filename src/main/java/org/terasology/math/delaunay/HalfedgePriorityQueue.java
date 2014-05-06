@@ -21,7 +21,7 @@ final class HalfedgePriorityQueue // also known as heap
 
         _count = 0;
         _minBucket = 0;
-        _hash = new ArrayList(_hashsize);
+        _hash = new ArrayList<Halfedge>(_hashsize);
         
         // dummy Halfedge at the top of each hash
         for (int i = 0; i < _hashsize; ++i) {

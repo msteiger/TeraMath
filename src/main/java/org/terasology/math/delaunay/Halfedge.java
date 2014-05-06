@@ -1,7 +1,5 @@
 package org.terasology.math.delaunay;
 
-import java.util.Stack;
-
 import org.terasology.math.geom.Vector2d;
 
 final class Halfedge {

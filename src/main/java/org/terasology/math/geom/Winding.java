@@ -17,34 +17,11 @@
 package org.terasology.math.geom;
 
 /**
- * Defines a line segment
  * @author Martin Steiger
  */
-public final class LineSegment {
+public enum Winding {
 
-    private final Vector2d p0;
-    private final Vector2d p1;
-
-    /**
-     * @param p0 the first point
-     * @param p1 the second point
-     */
-    public LineSegment(Vector2d p0, Vector2d p1) {
-        this.p0 = p0;
-        this.p1 = p1;
-    }
-
-    /**
-     * @return the first point
-     */
-    public Vector2d getP0() {
-        return p0;
-    }
-
-    /**
-     * @return the second point
-     */
-    public Vector2d getP1() {
-        return p1;
-    }
+    CLOCKWISE,
+    COUNTERCLOCKWISE,
+    NONE
 }
