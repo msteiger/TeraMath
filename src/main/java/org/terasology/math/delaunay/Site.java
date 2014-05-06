@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
@@ -5,6 +21,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import org.terasology.math.geom.BaseVector2d;
 import org.terasology.math.geom.Polygon;
 import org.terasology.math.geom.Rect2d;
 import org.terasology.math.geom.Vector2d;
@@ -16,29 +33,28 @@ public final class Site implements ICoord {
     
     private Vector2d coord;
 
-    private double weight;
     private int siteIndex;
     
     /** 
      * the edges that define this Site's Voronoi region:
      */
-    public List<Edge> _edges = new ArrayList<Edge>();
+    private List<Edge> edges = new ArrayList<Edge>();
     
     /** 
      * which end of each edge hooks up with the previous edge in _edges:
      */
-    private List<LR> _edgeOrientations;
+    private List<LR> edgeOrientations;
     
     /** 
      * ordered list of points that define the region clipped to bounds:
      */
-    private List<Vector2d> _region;
+    private List<Vector2d> region;
 
-    
-    public static Site create(Vector2d p, int index, double weight) {
-        return new Site(p, index, weight);
+    public Site(Vector2d p, int index) {
+        coord = p;
+        siteIndex = index;
     }
-
+    
     public static void sortSites(List<Site> sites) {
         //sites.sort(Site.compare);
         Collections.sort(sites, new Comparator<Site>() {
@@ -81,23 +97,12 @@ public final class Site implements ICoord {
     }
 
     private static boolean closeEnough(Vector2d p0, Vector2d p1) {
-        return Vector2d.distance(p0, p1) < EPSILON;
+        return BaseVector2d.distance(p0, p1) < EPSILON;
     }
 
     @Override
     public Vector2d getCoord() {
         return coord;
-    }
-
-    public Site(Vector2d p, int index, double weight) {
-        init(p, index, weight);
-    }
-
-    private Site init(Vector2d p, int index, double weight) {
-        coord = p;
-        siteIndex = index;
-        this.weight = weight;
-        return this;
     }
 
     @Override
@@ -106,29 +111,29 @@ public final class Site implements ICoord {
     }
 
     void addEdge(Edge edge) {
-        _edges.add(edge);
+        getEdges().add(edge);
     }
 
     public Edge nearestEdge() {
         // _edges.sort(Edge.compareSitesDistances);
-        Collections.sort(_edges, new Comparator<Edge>() {
+        Collections.sort(getEdges(), new Comparator<Edge>() {
             @Override
             public int compare(Edge o1, Edge o2) {
                 return (int) Edge.compareSitesDistances(o1, o2);
             }
         });
-        return _edges.get(0);
+        return getEdges().get(0);
     }
 
     List<Site> neighborSites() {
-        if (_edges == null || _edges.isEmpty()) {
+        if (getEdges() == null || getEdges().isEmpty()) {
             return Collections.emptyList();
         }
-        if (_edgeOrientations == null) {
+        if (edgeOrientations == null) {
             reorderEdges();
         }
         List<Site> list = new ArrayList<Site>();
-        for (Edge edge : _edges) {
+        for (Edge edge : getEdges()) {
             list.add(neighborSite(edge));
         }
         return list;
@@ -145,34 +150,34 @@ public final class Site implements ICoord {
     }
 
     List<Vector2d> region(Rect2d clippingBounds) {
-        if (_edges == null || _edges.isEmpty()) {
+        if (getEdges() == null || getEdges().isEmpty()) {
             return Collections.emptyList();
         }
-        if (_edgeOrientations == null) {
+        if (edgeOrientations == null) {
             reorderEdges();
-            _region = clipToBounds(clippingBounds);
-            if ((new Polygon(_region)).winding() == Winding.CLOCKWISE) {
-                Collections.reverse(_region);
+            region = clipToBounds(clippingBounds);
+            if ((new Polygon(region)).winding() == Winding.CLOCKWISE) {
+                Collections.reverse(region);
             }
         }
-        return _region;
+        return region;
     }
 
     private void reorderEdges() {
         //trace("_edges:", _edges);
-        EdgeReorderer reorderer = new EdgeReorderer(_edges, Vertex.class);
-        _edges = reorderer.get_edges();
+        EdgeReorderer reorderer = new EdgeReorderer(edges, Vertex.class);
+        edges = reorderer.getEdges();
         //trace("reordered:", _edges);
-        _edgeOrientations = reorderer.get_edgeOrientations();
+        edgeOrientations = reorderer.getEdgeOrientations();
         reorderer.dispose();
     }
 
     private List<Vector2d> clipToBounds(Rect2d bounds) {
         List<Vector2d> points = new ArrayList<Vector2d>();
-        int n = _edges.size();
+        int n = getEdges().size();
         int i = 0;
         Edge edge;
-        while (i < n && (_edges.get(i).isVisible() == false)) {
+        while (i < n && (!getEdges().get(i).isVisible())) {
             ++i;
         }
 
@@ -180,14 +185,14 @@ public final class Site implements ICoord {
             // no edges visible
             return Collections.emptyList();
         }
-        edge = _edges.get(i);
-        LR orientation = _edgeOrientations.get(i);
+        edge = getEdges().get(i);
+        LR orientation = edgeOrientations.get(i);
         points.add(edge.getClippedEnds().get(orientation));
         points.add(edge.getClippedEnds().get((orientation.other())));
 
         for (int j = i + 1; j < n; ++j) {
-            edge = _edges.get(j);
-            if (edge.isVisible() == false) {
+            edge = getEdges().get(j);
+            if (!edge.isVisible()) {
                 continue;
             }
             connect(points, j, bounds, false);
@@ -200,8 +205,8 @@ public final class Site implements ICoord {
 
     private void connect(List<Vector2d> points, int j, Rect2d bounds, boolean closingUp) {
         Vector2d rightPoint = points.get(points.size() - 1);
-        Edge newEdge = _edges.get(j);
-        LR newOrientation = _edgeOrientations.get(j);
+        Edge newEdge = getEdges().get(j);
+        LR newOrientation = edgeOrientations.get(j);
         // the point that  must be connected to rightPoint:
         Vector2d newPoint = newEdge.getClippedEnds().get(newOrientation);
         if (!closeEnough(rightPoint, newPoint)) {
@@ -216,7 +221,8 @@ public final class Site implements ICoord {
                 // around the bounds and included the smaller part rather than the larger)
                 int rightCheck = BoundsCheck.check(rightPoint, bounds);
                 int newCheck = BoundsCheck.check(newPoint, bounds);
-                double px, py;
+                double px;
+                double py;
                 if ((rightCheck & BoundsCheck.RIGHT) != 0) {
                     px = bounds.maxX();
                     if ((newCheck & BoundsCheck.BOTTOM) != 0) {
@@ -307,40 +313,48 @@ public final class Site implements ICoord {
         return coord.y();
     }
 
-}
-
-final class BoundsCheck {
-
-    final public static int TOP = 1;
-    final public static int BOTTOM = 2;
-    final public static int LEFT = 4;
-    final public static int RIGHT = 8;
 
     /**
-     *
-     * @param point
-     * @param bounds
-     * @return an int with the appropriate bits set if the Point lies on the
-     * corresponding bounds lines
-     *
+     * @return the edges
      */
-    public static int check(Vector2d point, Rect2d bounds) {
-        int value = 0;
-        if (point.getX() == bounds.minX()) {
-            value |= LEFT;
-        }
-        if (point.getX() == bounds.maxX()) {
-            value |= RIGHT;
-        }
-        if (point.getY() == bounds.minY()) {
-            value |= TOP;
-        }
-        if (point.getY() == bounds.maxY()) {
-            value |= BOTTOM;
-        }
-        return value;
+    public List<Edge> getEdges() {
+        return edges;
     }
 
-    private BoundsCheck() {
+    private static final class BoundsCheck {
+    
+        public static final int TOP = 1;
+        public static final int BOTTOM = 2;
+        public static final int LEFT = 4;
+        public static final int RIGHT = 8;
+    
+        private BoundsCheck() {
+        }
+        
+        /**
+         *
+         * @param point
+         * @param bounds
+         * @return an int with the appropriate bits set if the Point lies on the
+         * corresponding bounds lines
+         *
+         */
+        static int check(Vector2d point, Rect2d bounds) {
+            int value = 0;
+            if (point.getX() == bounds.minX()) {
+                value |= LEFT;
+            }
+            if (point.getX() == bounds.maxX()) {
+                value |= RIGHT;
+            }
+            if (point.getY() == bounds.minY()) {
+                value |= TOP;
+            }
+            if (point.getY() == bounds.maxY()) {
+                value |= BOTTOM;
+            }
+            return value;
+        }
+    
     }
 }

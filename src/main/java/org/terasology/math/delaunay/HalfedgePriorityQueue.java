@@ -1,59 +1,76 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.terasology.math.geom.Vector2d;
 
-final class HalfedgePriorityQueue // also known as heap
-{
+final class HalfedgePriorityQueue {
+    private List<Halfedge> hash;
+    private int count;
+    private int minBucket;
+    private int hashsize;
+    private double ymin;
+    private double deltay;
 
-    private ArrayList<Halfedge> _hash;
-    private int _count;
-    private int _minBucket;
-    private int _hashsize;
-    private double _ymin;
-    private double _deltay;
+    public HalfedgePriorityQueue(double ymin, double deltay, int sqrtNumSites) {
+        this.ymin = ymin;
+        this.deltay = deltay;
+        hashsize = 4 * sqrtNumSites;
 
-    public HalfedgePriorityQueue(double ymin, double deltay, int sqrt_nsites) {
-        _ymin = ymin;
-        _deltay = deltay;
-        _hashsize = 4 * sqrt_nsites;
-
-        _count = 0;
-        _minBucket = 0;
-        _hash = new ArrayList<Halfedge>(_hashsize);
+        count = 0;
+        minBucket = 0;
+        hash = new ArrayList<Halfedge>(hashsize);
         
         // dummy Halfedge at the top of each hash
-        for (int i = 0; i < _hashsize; ++i) {
-            _hash.add(Halfedge.createDummy());
-            _hash.get(i).nextInPriorityQueue = null;
+        for (int i = 0; i < hashsize; ++i) {
+            hash.add(Halfedge.createDummy());
+            hash.get(i).nextInPriorityQueue = null;
         }
     }
 
     public void dispose() {
         // get rid of dummies
-        for (int i = 0; i < _hashsize; ++i) {
-            _hash.get(i).dispose();
+        for (int i = 0; i < hashsize; ++i) {
+            hash.get(i).dispose();
         }
-        _hash.clear();
-        _hash = null;
+        hash.clear();
+        hash = null;
     }
 
 
     public void insert(Halfedge halfEdge) {
-        Halfedge previous, next;
+        Halfedge previous;
+        Halfedge next;
         int insertionBucket = bucket(halfEdge);
-        if (insertionBucket < _minBucket) {
-            _minBucket = insertionBucket;
+        if (insertionBucket < minBucket) {
+            minBucket = insertionBucket;
         }
-        previous = _hash.get(insertionBucket);
-        while ((next = previous.nextInPriorityQueue) != null
-                && (halfEdge.ystar > next.ystar || (halfEdge.ystar == next.ystar && halfEdge.vertex.getX() > next.vertex.getX()))) {
+        previous = hash.get(insertionBucket);
+        next = previous.nextInPriorityQueue;
+        while (next != null && (halfEdge.ystar > next.ystar || (halfEdge.ystar == next.ystar && halfEdge.vertex.getX() > next.vertex.getX()))) {
             previous = next;
+            next = previous.nextInPriorityQueue;
         }
         halfEdge.nextInPriorityQueue = previous.nextInPriorityQueue;
         previous.nextInPriorityQueue = halfEdge;
-        ++_count;
+        ++count;
     }
 
     public void remove(Halfedge halfEdge) {
@@ -61,12 +78,12 @@ final class HalfedgePriorityQueue // also known as heap
         int removalBucket = bucket(halfEdge);
 
         if (halfEdge.vertex != null) {
-            previous = _hash.get(removalBucket);
+            previous = hash.get(removalBucket);
             while (previous.nextInPriorityQueue != halfEdge) {
                 previous = previous.nextInPriorityQueue;
             }
             previous.nextInPriorityQueue = halfEdge.nextInPriorityQueue;
-            _count--;
+            count--;
             halfEdge.vertex = null;
             halfEdge.nextInPriorityQueue = null;
             halfEdge.dispose();
@@ -74,18 +91,18 @@ final class HalfedgePriorityQueue // also known as heap
     }
 
     private int bucket(Halfedge halfEdge) {
-        int theBucket = (int) ((halfEdge.ystar - _ymin) / _deltay * _hashsize);
+        int theBucket = (int) ((halfEdge.ystar - ymin) / deltay * hashsize);
         if (theBucket < 0) {
             theBucket = 0;
         }
-        if (theBucket >= _hashsize) {
-            theBucket = _hashsize - 1;
+        if (theBucket >= hashsize) {
+            theBucket = hashsize - 1;
         }
         return theBucket;
     }
 
     private boolean isEmpty(int bucket) {
-        return (_hash.get(bucket).nextInPriorityQueue == null);
+        return (hash.get(bucket).nextInPriorityQueue == null);
     }
 
     /**
@@ -94,13 +111,13 @@ final class HalfedgePriorityQueue // also known as heap
      *
      */
     private void adjustMinBucket() {
-        while (_minBucket < _hashsize - 1 && isEmpty(_minBucket)) {
-            ++_minBucket;
+        while (minBucket < hashsize - 1 && isEmpty(minBucket)) {
+            ++minBucket;
         }
     }
 
     public boolean empty() {
-        return _count == 0;
+        return count == 0;
     }
 
     /**
@@ -110,7 +127,7 @@ final class HalfedgePriorityQueue // also known as heap
      */
     public Vector2d min() {
         adjustMinBucket();
-        Halfedge answer = _hash.get(_minBucket).nextInPriorityQueue;
+        Halfedge answer = hash.get(minBucket).nextInPriorityQueue;
         return new Vector2d(answer.vertex.getX(), answer.ystar);
     }
 
@@ -124,10 +141,10 @@ final class HalfedgePriorityQueue // also known as heap
         Halfedge answer;
 
         // get the first real Halfedge in _minBucket
-        answer = _hash.get(_minBucket).nextInPriorityQueue;
+        answer = hash.get(minBucket).nextInPriorityQueue;
 
-        _hash.get(_minBucket).nextInPriorityQueue = answer.nextInPriorityQueue;
-        _count--;
+        hash.get(minBucket).nextInPriorityQueue = answer.nextInPriorityQueue;
+        count--;
         answer.nextInPriorityQueue = null;
 
         return answer;

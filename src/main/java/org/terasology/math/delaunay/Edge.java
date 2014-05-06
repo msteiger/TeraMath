@@ -1,8 +1,25 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.terasology.math.geom.BaseVector2d;
 import org.terasology.math.geom.LineSegment;
 import org.terasology.math.geom.Vector2d;
 import org.terasology.math.geom.Rect2d;
@@ -17,10 +34,12 @@ import org.terasology.math.geom.Rect2d;
  */
 public final class Edge {
 
-    final public static Edge DELETED = new Edge();
+    public static final Edge DELETED = new Edge();
 
     // the equation of the edge: ax + by = c
-    double a, b, c;
+    private double a;
+    private double b;
+    private double c;
     
     // the two Voronoi vertices that the edge connects
     // (if one of them is null, the edge extends to infinity)
@@ -38,6 +57,10 @@ public final class Edge {
      */
     private final Map<LR, Site> sites = new EnumMap<LR, Site>(LR.class);
 
+
+    private Edge() {
+    }
+
     /**
      * This is the only way to create a new Edge
      *
@@ -47,13 +70,14 @@ public final class Edge {
      *
      */
     public static Edge createBisectingEdge(Site site0, Site site1) {
-        double dx, dy, absdx, absdy;
-        double a, b, c;
+        double a;
+        double b;
+        double c;
 
-        dx = site1.getX() - site0.getX();
-        dy = site1.getY() - site0.getY();
-        absdx = dx > 0 ? dx : -dx;
-        absdy = dy > 0 ? dy : -dy;
+        double dx = site1.getX() - site0.getX();
+        double dy = site1.getY() - site0.getY();
+        double absdx = dx > 0 ? dx : -dx;
+        double absdy = dy > 0 ? dy : -dy;
         c = site0.getX() * dx + site0.getY() * dy + (dx * dx + dy * dy) * 0.5;
         if (absdx > absdy) {
             a = 1.0;
@@ -75,9 +99,7 @@ public final class Edge {
         edge.leftVertex = null;
         edge.rightVertex = null;
 
-        edge.a = a;
-        edge.b = b;
-        edge.c = c;
+        edge.set(a, b, c);
         //trace("createBisectingEdge: a ", edge.a, "b", edge.b, "c", edge.c);
 
         return edge;
@@ -117,10 +139,10 @@ public final class Edge {
     }
 
     public double sitesDistance() {
-        return Vector2d.distance(getLeftSite().getCoord(), getRightSite().getCoord());
+        return BaseVector2d.distance(getLeftSite().getCoord(), getRightSite().getCoord());
     }
 
-    public static double compareSitesDistances_MAX(Edge edge0, Edge edge1) {
+    public static double compareSitesDistancesMax(Edge edge0, Edge edge1) {
         double length0 = edge0.sitesDistance();
         double length1 = edge1.sitesDistance();
         if (length0 < length1) {
@@ -133,7 +155,7 @@ public final class Edge {
     }
 
     public static double compareSitesDistances(Edge edge0, Edge edge1) {
-        return -compareSitesDistances_MAX(edge0, edge1);
+        return -compareSitesDistancesMax(edge0, edge1);
     }
 
     public Map<LR, Vector2d> getClippedEnds() {
@@ -167,9 +189,6 @@ public final class Edge {
         return sites.get(leftRight);
     }
 
-    private Edge() {
-    }
-
     @Override
     public String toString() {
         return "Edge [sites " + sites.get(LR.LEFT) + ", " + sites.get(LR.RIGHT)
@@ -190,10 +209,14 @@ public final class Edge {
         double xmax = bounds.maxX();
         double ymax = bounds.maxY();
 
-        Vertex vertex0, vertex1;
-        double x0, x1, y0, y1;
+        Vertex vertex0;
+        Vertex vertex1;
+        double x0;
+        double x1;
+        double y0;
+        double y1;
 
-        if (a == 1.0 && b >= 0.0) {
+        if (getA() == 1.0 && getB() >= 0.0) {
             vertex0 = rightVertex;
             vertex1 = leftVertex;
         } else {
@@ -201,7 +224,7 @@ public final class Edge {
             vertex1 = rightVertex;
         }
 
-        if (a == 1.0) {
+        if (getA() == 1.0) {
             y0 = ymin;
             if (vertex0 != null && vertex0.getY() > ymin) {
                 y0 = vertex0.getY();
@@ -209,7 +232,7 @@ public final class Edge {
             if (y0 > ymax) {
                 return;
             }
-            x0 = c - b * y0;
+            x0 = getC() - getB() * y0;
 
             y1 = ymax;
             if (vertex1 != null && vertex1.getY() < ymax) {
@@ -218,7 +241,7 @@ public final class Edge {
             if (y1 < ymin) {
                 return;
             }
-            x1 = c - b * y1;
+            x1 = getC() - getB() * y1;
 
             if ((x0 > xmax && x1 > xmax) || (x0 < xmin && x1 < xmin)) {
                 return;
@@ -226,18 +249,18 @@ public final class Edge {
 
             if (x0 > xmax) {
                 x0 = xmax;
-                y0 = (c - x0) / b;
+                y0 = (getC() - x0) / getB();
             } else if (x0 < xmin) {
                 x0 = xmin;
-                y0 = (c - x0) / b;
+                y0 = (getC() - x0) / getB();
             }
 
             if (x1 > xmax) {
                 x1 = xmax;
-                y1 = (c - x1) / b;
+                y1 = (getC() - x1) / getB();
             } else if (x1 < xmin) {
                 x1 = xmin;
-                y1 = (c - x1) / b;
+                y1 = (getC() - x1) / getB();
             }
         } else {
             x0 = xmin;
@@ -247,7 +270,7 @@ public final class Edge {
             if (x0 > xmax) {
                 return;
             }
-            y0 = c - a * x0;
+            y0 = getC() - getA() * x0;
 
             x1 = xmax;
             if (vertex1 != null && vertex1.getX() < xmax) {
@@ -256,7 +279,7 @@ public final class Edge {
             if (x1 < xmin) {
                 return;
             }
-            y1 = c - a * x1;
+            y1 = getC() - getA() * x1;
 
             if ((y0 > ymax && y1 > ymax) || (y0 < ymin && y1 < ymin)) {
                 return;
@@ -264,18 +287,18 @@ public final class Edge {
 
             if (y0 > ymax) {
                 y0 = ymax;
-                x0 = (c - y0) / a;
+                x0 = (getC() - y0) / getA();
             } else if (y0 < ymin) {
                 y0 = ymin;
-                x0 = (c - y0) / a;
+                x0 = (getC() - y0) / getA();
             }
 
             if (y1 > ymax) {
                 y1 = ymax;
-                x1 = (c - y1) / a;
+                x1 = (getC() - y1) / getA();
             } else if (y1 < ymin) {
                 y1 = ymin;
-                x1 = (c - y1) / a;
+                x1 = (getC() - y1) / getA();
             }
         }
 
@@ -287,5 +310,32 @@ public final class Edge {
             clippedVertices.put(LR.RIGHT, new Vector2d(x0, y0));
             clippedVertices.put(LR.LEFT, new Vector2d(x1, y1));
         }
+    }
+    
+    public void set(double na, double nb, double nc) {
+        this.a = na;
+        this.b = nb;
+        this.c = nc;
+    }
+
+    /**
+     * @return the a
+     */
+    public double getA() {
+        return a;
+    }
+
+    /**
+     * @return the b
+     */
+    public double getB() {
+        return b;
+    }
+
+    /**
+     * @return the c
+     */
+    public double getC() {
+        return c;
     }
 }

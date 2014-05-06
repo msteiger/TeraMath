@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
@@ -7,19 +23,19 @@ import org.terasology.math.geom.Vector2d;
 
 final class EdgeList {
 
-    private double _deltax;
-    private double _xmin;
-    private int _hashsize;
-    private final List<Halfedge> _hash;
+    private double deltax;
+    private double xmin;
+    private int hashsize;
+    private final List<Halfedge> hash;
     private Halfedge leftEnd;
     private Halfedge rightEnd;
 
-    public EdgeList(double xmin, double deltax, int sqrt_nsites) {
-        _xmin = xmin;
-        _deltax = deltax;
-        _hashsize = 2 * sqrt_nsites;
+    public EdgeList(double xmin, double deltax, int sqrtNumSites) {
+        this.xmin = xmin;
+        this.deltax = deltax;
+        this.hashsize = 2 * sqrtNumSites;
 
-        _hash = new ArrayList<Halfedge>(_hashsize);
+        this.hash = new ArrayList<Halfedge>(hashsize);
 
         // two dummy Halfedges:
         leftEnd = Halfedge.createDummy();
@@ -28,13 +44,13 @@ final class EdgeList {
         leftEnd.edgeListRightNeighbor = rightEnd;
         rightEnd.edgeListLeftNeighbor = leftEnd;
         rightEnd.edgeListRightNeighbor = null;
-        
-        for(int i = 0; i < _hashsize; i++){
-            _hash.add(null);
+
+        for (int i = 0; i < hashsize; i++) {
+            hash.add(null);
         }
-        
-        _hash.set(0, leftEnd);
-        _hash.set(_hashsize - 1, rightEnd);
+
+        hash.set(0, leftEnd);
+        hash.set(hashsize - 1, rightEnd);
     }
 
     /**
@@ -62,7 +78,8 @@ final class EdgeList {
         halfEdge.edgeListLeftNeighbor.edgeListRightNeighbor = halfEdge.edgeListRightNeighbor;
         halfEdge.edgeListRightNeighbor.edgeListLeftNeighbor = halfEdge.edgeListLeftNeighbor;
         halfEdge.edge = Edge.DELETED;
-        halfEdge.edgeListLeftNeighbor = halfEdge.edgeListRightNeighbor = null;
+        halfEdge.edgeListLeftNeighbor = null;
+        halfEdge.edgeListRightNeighbor = null;
     }
 
     /**
@@ -73,24 +90,27 @@ final class EdgeList {
      *
      */
     public Halfedge edgeListLeftNeighbor(Vector2d p) {
-        int i, bucket;
+        int i;
+        int bucket;
         Halfedge halfEdge;
 
         /* Use hash table to get close to desired halfedge */
-        bucket = (int) ((p.getX() - _xmin) / _deltax * _hashsize);
+        bucket = (int) ((p.getX() - xmin) / deltax * hashsize);
         if (bucket < 0) {
             bucket = 0;
         }
-        if (bucket >= _hashsize) {
-            bucket = _hashsize - 1;
+        if (bucket >= hashsize) {
+            bucket = hashsize - 1;
         }
         halfEdge = getHash(bucket);
         if (halfEdge == null) {
             for (i = 1; true; ++i) {
-                if ((halfEdge = getHash(bucket - i)) != null) {
+                halfEdge = getHash(bucket - i);
+                if (halfEdge != null) {
                     break;
                 }
-                if ((halfEdge = getHash(bucket + i)) != null) {
+                halfEdge = getHash(bucket + i);
+                if (halfEdge != null) {
                     break;
                 }
             }
@@ -108,8 +128,8 @@ final class EdgeList {
         }
 
         /* Update hash table and reference counts */
-        if (bucket > 0 && bucket < _hashsize - 1) {
-            _hash.set(bucket, halfEdge);
+        if (bucket > 0 && bucket < hashsize - 1) {
+            hash.set(bucket, halfEdge);
         }
         return halfEdge;
     }
@@ -120,13 +140,13 @@ final class EdgeList {
     private Halfedge getHash(int b) {
         Halfedge halfEdge;
 
-        if (b < 0 || b >= _hashsize) {
+        if (b < 0 || b >= hashsize) {
             return null;
         }
-        halfEdge = _hash.get(b);
+        halfEdge = hash.get(b);
         if (halfEdge != null && halfEdge.edge == Edge.DELETED) {
             /* Hash table points to deleted halfedge.  Patch as necessary. */
-            _hash.set(b, null);
+            hash.set(b, null);
             // still can't dispose halfEdge yet!
             return null;
         } else {

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
@@ -28,7 +44,7 @@ final class SiteList {
     }
 
     public Site next() {
-        if (sorted == false) {
+        if (!sorted) {
             throw new IllegalStateException("Sites have not been sorted");
         }
         if (currentIndex < sites.size()) {
@@ -39,12 +55,15 @@ final class SiteList {
     }
 
     public Rect2d getSitesBounds() {
-        if (sorted == false) {
+        if (!sorted) {
             Site.sortSites(sites);
             currentIndex = 0;
             sorted = true;
         }
-        double xmin, xmax, ymin, ymax;
+        double xmin;
+        double xmax;
+        double ymin;
+        double ymax;
         if (sites.isEmpty()) {
             return Rect2d.createFromMinAndSize(0, 0, 0, 0);
         }

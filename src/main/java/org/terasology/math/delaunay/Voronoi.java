@@ -1,11 +1,31 @@
+/*
+ * Copyright 2014 MovingBlocks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.terasology.math.geom.BaseVector2d;
 import org.terasology.math.geom.Circle;
 import org.terasology.math.geom.LineSegment;
 import org.terasology.math.geom.Vector2d;
@@ -13,17 +33,15 @@ import org.terasology.math.geom.Rect2d;
 
 public final class Voronoi {
 
-    private SiteList _sites;
-    private HashMap<Vector2d, Site> _sitesIndexedByLocation;
+    private static final Logger logger = LoggerFactory.getLogger(Voronoi.class);
+    
+    private SiteList sites;
+    private Map<Vector2d, Site> sitesIndexedByLocation;
 
-    private final List<Edge> _edges = new ArrayList<Edge>();
+    private final List<Edge> edges = new ArrayList<Edge>();
     // TODO generalize this so it doesn't have to be a rectangle;
     // then we can make the fractal voronois-within-voronois
-    private Rect2d _plotBounds;
-
-    public Rect2d get_plotBounds() {
-        return _plotBounds;
-    }
+    private Rect2d plotBounds;
 
     public Voronoi(List<Vector2d> points, Rect2d plotBounds) {
         init(points, plotBounds);
@@ -31,12 +49,14 @@ public final class Voronoi {
     }
 
     public Voronoi(List<Vector2d> points) {
-        double maxWidth = 0, maxHeight = 0;
+        double maxWidth = 0;
+        double maxHeight = 0;
         for (Vector2d p : points) {
             maxWidth = Math.max(maxWidth, p.getX());
             maxHeight = Math.max(maxHeight, p.getY());
         }
-        System.out.println(maxWidth + "," + maxHeight);
+        logger.debug(maxWidth + "," + maxHeight);
+        
         init(points, Rect2d.createFromMinAndSize(0, 0, maxWidth, maxHeight));
         fortunesAlgorithm();
     }
@@ -50,11 +70,15 @@ public final class Voronoi {
         fortunesAlgorithm();
     }
 
-    private void init(List<Vector2d> points, Rect2d plotBounds) {
-        _sites = new SiteList();
-        _sitesIndexedByLocation = new HashMap<Vector2d, Site>();
+    public Rect2d getPlotBounds() {
+        return plotBounds;
+    }
+    
+    private void init(List<Vector2d> points, Rect2d bounds) {
+        sites = new SiteList();
+        sitesIndexedByLocation = new HashMap<Vector2d, Site>();
         addSites(points);
-        _plotBounds = plotBounds;
+        this.plotBounds = bounds;
     }
 
     private void addSites(List<Vector2d> points) {
@@ -65,40 +89,39 @@ public final class Voronoi {
     }
 
     private void addSite(Vector2d p, int index) {
-        double weight = Math.random() * 100;
-        Site site = Site.create(p, index, weight);
-        _sites.push(site);
-        _sitesIndexedByLocation.put(p, site);
+        Site site = new Site(p, index);
+        sites.push(site);
+        sitesIndexedByLocation.put(p, site);
     }
 
     public List<Edge> edges() {
-        return _edges;
+        return edges;
     }
 
     public List<Vector2d> region(Vector2d p) {
-        Site site = _sitesIndexedByLocation.get(p);
+        Site site = sitesIndexedByLocation.get(p);
         if (site == null) {
             return Collections.emptyList();
         }
-        return site.region(_plotBounds);
+        return site.region(plotBounds);
     }
 
     // TODO: bug: if you call this before you call region(), something goes wrong :(
     public List<Vector2d> neighborSitesForSite(Vector2d coord) {
         List<Vector2d> points = new ArrayList<Vector2d>();
-        Site site = _sitesIndexedByLocation.get(coord);
+        Site site = sitesIndexedByLocation.get(coord);
         if (site == null) {
             return points;
         }
-        List<Site> sites = site.neighborSites();
-        for (Site neighbor : sites) {
+        List<Site> sts = site.neighborSites();
+        for (Site neighbor : sts) {
             points.add(neighbor.getCoord());
         }
         return points;
     }
 
     public List<Circle> circles() {
-        return _sites.circles();
+        return sites.circles();
     }
 
     private List<Edge> selectEdgesForSitePoint(Vector2d coord, List<Edge> edgesToTest) {
@@ -113,10 +136,10 @@ public final class Voronoi {
         return filtered;
     }
 
-    private List<LineSegment> visibleLineSegments(List<Edge> edges) {
+    private List<LineSegment> visibleLineSegments(List<Edge> edgs) {
         List<LineSegment> segments = new ArrayList<LineSegment>();
 
-        for (Edge edge : edges) {
+        for (Edge edge : edgs) {
             if (edge.isVisible()) {
                 Vector2d p1 = edge.getClippedEnds().get(LR.LEFT);
                 Vector2d p2 = edge.getClippedEnds().get(LR.RIGHT);
@@ -127,10 +150,10 @@ public final class Voronoi {
         return segments;
     }
 
-    private List<LineSegment> delaunayLinesForEdges(List<Edge> edges) {
+    private List<LineSegment> delaunayLinesForEdges(List<Edge> edgs) {
         List<LineSegment> segments = new ArrayList<LineSegment>();
 
-        for (Edge edge : edges) {
+        for (Edge edge : edgs) {
             segments.add(edge.delaunayLine());
         }
 
@@ -138,15 +161,15 @@ public final class Voronoi {
     }
 
     public List<LineSegment> voronoiBoundaryForSite(Vector2d coord) {
-        return visibleLineSegments(selectEdgesForSitePoint(coord, _edges));
+        return visibleLineSegments(selectEdgesForSitePoint(coord, edges));
     }
 
     public List<LineSegment> delaunayLinesForSite(Vector2d coord) {
-        return delaunayLinesForEdges(selectEdgesForSitePoint(coord, _edges));
+        return delaunayLinesForEdges(selectEdgesForSitePoint(coord, edges));
     }
 
     public List<LineSegment> voronoiDiagram() {
-        return visibleLineSegments(_edges);
+        return visibleLineSegments(edges);
     }
 
     public List<LineSegment> hull() {
@@ -156,7 +179,7 @@ public final class Voronoi {
     private List<Edge> hullEdges() {
         List<Edge> filtered = new ArrayList<Edge>();
 
-        for (Edge e : _edges) {
+        for (Edge e : edges) {
             if (e.isPartOfConvexHull()) {
                 filtered.add(e);
             }
@@ -181,8 +204,8 @@ public final class Voronoi {
         }
 
         EdgeReorderer reorderer = new EdgeReorderer(hullEdges, Site.class);
-        hullEdges = reorderer.get_edges();
-        List<LR> orientations = reorderer.get_edgeOrientations();
+        hullEdges = reorderer.getEdges();
+        List<LR> orientations = reorderer.getEdgeOrientations();
         reorderer.dispose();
 
         LR orientation;
@@ -197,34 +220,42 @@ public final class Voronoi {
     }
 
     public List<List<Vector2d>> regions() {
-        return _sites.regions(_plotBounds);
+        return sites.regions(plotBounds);
     }
 
     public List<Vector2d> siteCoords() {
-        return _sites.siteCoords();
+        return sites.siteCoords();
     }
 
     private void fortunesAlgorithm() {
-        Site newSite, bottomSite, topSite, tempSite;
-        Vertex v, vertex;
+        Site newSite;
+        Site bottomSite;
+        Site topSite;
+        Site tempSite;
+        Vertex v;
+        Vertex vertex;
         Vector2d newintstar = null;
         LR leftRight;
-        Halfedge lbnd, rbnd, llbnd, rrbnd, bisector;
+        Halfedge lbnd;
+        Halfedge rbnd;
+        Halfedge llbnd;
+        Halfedge rrbnd;
+        Halfedge bisector;
         Edge edge;
 
-        Rect2d dataBounds = _sites.getSitesBounds();
+        Rect2d dataBounds = sites.getSitesBounds();
 
-        int sqrt_nsites = (int) Math.sqrt(_sites.getLength() + 4);
-        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.minY(), dataBounds.height(), sqrt_nsites);
-        EdgeList edgeList = new EdgeList(dataBounds.minX(), dataBounds.width(), sqrt_nsites);
+        int sqrtNumSites = (int) Math.sqrt(sites.getLength() + 4);
+        HalfedgePriorityQueue heap = new HalfedgePriorityQueue(dataBounds.minY(), dataBounds.height(), sqrtNumSites);
+        EdgeList edgeList = new EdgeList(dataBounds.minX(), dataBounds.width(), sqrtNumSites);
         List<Halfedge> halfEdges = new ArrayList<Halfedge>();
         List<Vertex> vertices = new ArrayList<Vertex>();
 
-        Site bottomMostSite = _sites.next();
-        newSite = _sites.next();
+        Site bottomMostSite = sites.next();
+        newSite = sites.next();
 
         for (;;) {
-            if (heap.empty() == false) {
+            if (!heap.empty()) {
                 newintstar = heap.min();
             }
 
@@ -245,7 +276,7 @@ public final class Voronoi {
                 // Step 9:
                 edge = Edge.createBisectingEdge(bottomSite, newSite);
                 //trace("new edge: " + edge);
-                _edges.add(edge);
+                edges.add(edge);
 
                 bisector = Halfedge.create(edge, LR.LEFT);
                 halfEdges.add(bisector);
@@ -254,11 +285,12 @@ public final class Voronoi {
                 edgeList.insert(lbnd, bisector);
 
                 // first half of Step 11:
-                if ((vertex = Vertex.intersect(lbnd, bisector)) != null) {
+                vertex = Vertex.intersect(lbnd, bisector);
+                if (vertex != null) {
                     vertices.add(vertex);
                     heap.remove(lbnd);
                     lbnd.vertex = vertex;
-                    lbnd.ystar = vertex.getY() + Vector2d.distance(newSite.getCoord(), vertex.getCoord());
+                    lbnd.ystar = vertex.getY() + BaseVector2d.distance(newSite.getCoord(), vertex.getCoord());
                     heap.insert(lbnd);
                 }
 
@@ -270,15 +302,16 @@ public final class Voronoi {
                 edgeList.insert(lbnd, bisector);
 
                 // second half of Step 11:
-                if ((vertex = Vertex.intersect(bisector, rbnd)) != null) {
+                vertex = Vertex.intersect(bisector, rbnd);
+                if (vertex != null) {
                     vertices.add(vertex);
                     bisector.vertex = vertex;
-                    bisector.ystar = vertex.getY() + Vector2d.distance(newSite.getCoord(), vertex.getCoord());
+                    bisector.ystar = vertex.getY() + BaseVector2d.distance(newSite.getCoord(), vertex.getCoord());
                     heap.insert(bisector);
                 }
 
-                newSite = _sites.next();
-            } else if (heap.empty() == false) {
+                newSite = sites.next();
+            } else if (!heap.empty()) {
                 /* intersection is smallest */
                 lbnd = heap.extractMin();
                 llbnd = lbnd.edgeListLeftNeighbor;
@@ -304,22 +337,24 @@ public final class Voronoi {
                     leftRight = LR.RIGHT;
                 }
                 edge = Edge.createBisectingEdge(bottomSite, topSite);
-                _edges.add(edge);
+                edges.add(edge);
                 bisector = Halfedge.create(edge, leftRight);
                 halfEdges.add(bisector);
                 edgeList.insert(llbnd, bisector);
                 edge.setVertex(leftRight.other(), v);
-                if ((vertex = Vertex.intersect(llbnd, bisector)) != null) {
+                vertex = Vertex.intersect(llbnd, bisector);
+                if (vertex != null) {
                     vertices.add(vertex);
                     heap.remove(llbnd);
                     llbnd.vertex = vertex;
-                    llbnd.ystar = vertex.getY() + Vector2d.distance(bottomSite.getCoord(), vertex.getCoord());
+                    llbnd.ystar = vertex.getY() + BaseVector2d.distance(bottomSite.getCoord(), vertex.getCoord());
                     heap.insert(llbnd);
                 }
-                if ((vertex = Vertex.intersect(bisector, rrbnd)) != null) {
+                vertex = Vertex.intersect(bisector, rrbnd);
+                if (vertex != null) {
                     vertices.add(vertex);
                     bisector.vertex = vertex;
-                    bisector.ystar = vertex.getY() + Vector2d.distance(bottomSite.getCoord(), vertex.getCoord());
+                    bisector.ystar = vertex.getY() + BaseVector2d.distance(bottomSite.getCoord(), vertex.getCoord());
                     heap.insert(bisector);
                 }
             } else {
@@ -336,8 +371,8 @@ public final class Voronoi {
         halfEdges.clear();
 
         // we need the vertices to clip the edges
-        for (Edge e : _edges) {
-            e.clipVertices(_plotBounds);
+        for (Edge e : edges) {
+            e.clipVertices(plotBounds);
         }
         // but we don't actually ever use them again!
         vertices.clear();
