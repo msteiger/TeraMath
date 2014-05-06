@@ -1,12 +1,12 @@
 package org.terasology.math.delaunay;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 
 final class Vertex implements ICoord {
 
     final public static Vertex VERTEX_AT_INFINITY = new Vertex(Double.NaN, Double.NaN);
     
-    private Point coord;
+    private Vector2d coord;
 
 	private static Vertex create(double x, double y)
 	{
@@ -21,12 +21,12 @@ final class Vertex implements ICoord {
 	}
 
     @Override
-    public Point getCoord() {
+    public Vector2d getCoord() {
         return coord;
     }
 
     private Vertex(double x, double y) {
-        coord = new Point(x, y);
+        coord = new Vector2d(x, y);
     }
 
     @Override
@@ -81,10 +81,10 @@ final class Vertex implements ICoord {
     }
 
     public double getX() {
-        return coord.x;
+        return coord.x();
     }
 
     public double getY() {
-        return coord.y;
+        return coord.y();
     }
 }

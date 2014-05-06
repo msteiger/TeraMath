@@ -1,8 +1,8 @@
 package org.terasology.math.delaunay;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 
 public interface ICoord {
 
-    Point getCoord();
+    Vector2d getCoord();
 }

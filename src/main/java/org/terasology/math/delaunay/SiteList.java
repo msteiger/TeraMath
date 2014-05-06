@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.terasology.math.geom.Circle;
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 import org.terasology.math.geom.Rectangle;
 
 final class SiteList {
@@ -65,8 +65,8 @@ final class SiteList {
         return new Rectangle(xmin, ymin, xmax - xmin, ymax - ymin);
     }
 
-    public List<Point> siteCoords() {
-        List<Point> coords = new ArrayList<Point>();
+    public List<Vector2d> siteCoords() {
+        List<Vector2d> coords = new ArrayList<Vector2d>();
         for (Site site : sites) {
             coords.add(site.getCoord());
         }
@@ -92,8 +92,8 @@ final class SiteList {
         return circles;
     }
 
-    public List<List<Point>> regions(Rectangle plotBounds) {
-        List<List<Point>> regions = new ArrayList<List<Point>>();
+    public List<List<Vector2d>> regions(Rectangle plotBounds) {
+        List<List<Vector2d>> regions = new ArrayList<List<Vector2d>>();
         for (Site site : sites) {
             regions.add(site.region(plotBounds));
         }

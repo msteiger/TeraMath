@@ -2,7 +2,7 @@ package org.terasology.math.delaunay;
 
 import java.util.ArrayList;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 
 final class HalfedgePriorityQueue // also known as heap
 {
@@ -108,10 +108,10 @@ final class HalfedgePriorityQueue // also known as heap
      * Voronoi diagram
      *
      */
-    public Point min() {
+    public Vector2d min() {
         adjustMinBucket();
         Halfedge answer = _hash.get(_minBucket).nextInPriorityQueue;
-        return new Point(answer.vertex.getX(), answer.ystar);
+        return new Vector2d(answer.vertex.getX(), answer.ystar);
     }
 
     /**

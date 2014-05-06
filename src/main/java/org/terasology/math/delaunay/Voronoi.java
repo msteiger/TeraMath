@@ -36,13 +36,13 @@ import java.util.Random;
 
 import org.terasology.math.geom.Circle;
 import org.terasology.math.geom.LineSegment;
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 import org.terasology.math.geom.Rectangle;
 
 public final class Voronoi {
 
     private SiteList _sites;
-    private HashMap<Point, Site> _sitesIndexedByLocation;
+    private HashMap<Vector2d, Site> _sitesIndexedByLocation;
 
     private final List<Edge> _edges = new ArrayList<Edge>();
     // TODO generalize this so it doesn't have to be a rectangle;
@@ -53,16 +53,16 @@ public final class Voronoi {
         return _plotBounds;
     }
 
-    public Voronoi(List<Point> points, Rectangle plotBounds) {
+    public Voronoi(List<Vector2d> points, Rectangle plotBounds) {
         init(points, plotBounds);
         fortunesAlgorithm();
     }
 
-    public Voronoi(List<Point> points) {
+    public Voronoi(List<Vector2d> points) {
         double maxWidth = 0, maxHeight = 0;
-        for (Point p : points) {
-            maxWidth = Math.max(maxWidth, p.x);
-            maxHeight = Math.max(maxHeight, p.y);
+        for (Vector2d p : points) {
+            maxWidth = Math.max(maxWidth, p.getX());
+            maxHeight = Math.max(maxHeight, p.getY());
         }
         System.out.println(maxWidth + "," + maxHeight);
         init(points, new Rectangle(0, 0, maxWidth, maxHeight));
@@ -70,29 +70,29 @@ public final class Voronoi {
     }
 
     public Voronoi(int numSites, double maxWidth, double maxHeight, Random r) {
-        List<Point> points = new ArrayList<Point>();
+        List<Vector2d> points = new ArrayList<Vector2d>();
         for (int i = 0; i < numSites; i++) {
-            points.add(new Point(r.nextDouble() * maxWidth, r.nextDouble() * maxHeight));
+            points.add(new Vector2d(r.nextDouble() * maxWidth, r.nextDouble() * maxHeight));
         }
         init(points, new Rectangle(0, 0, maxWidth, maxHeight));
         fortunesAlgorithm();
     }
 
-    private void init(List<Point> points, Rectangle plotBounds) {
+    private void init(List<Vector2d> points, Rectangle plotBounds) {
         _sites = new SiteList();
-        _sitesIndexedByLocation = new HashMap<Point, Site>();
+        _sitesIndexedByLocation = new HashMap<Vector2d, Site>();
         addSites(points);
         _plotBounds = plotBounds;
     }
 
-    private void addSites(List<Point> points) {
+    private void addSites(List<Vector2d> points) {
         int length = points.size();
         for (int i = 0; i < length; ++i) {
             addSite(points.get(i), i);
         }
     }
 
-    private void addSite(Point p, int index) {
+    private void addSite(Vector2d p, int index) {
         double weight = Math.random() * 100;
         Site site = Site.create(p, index, weight);
         _sites.push(site);
@@ -103,7 +103,7 @@ public final class Voronoi {
         return _edges;
     }
 
-    public List<Point> region(Point p) {
+    public List<Vector2d> region(Vector2d p) {
         Site site = _sitesIndexedByLocation.get(p);
         if (site == null) {
             return Collections.emptyList();
@@ -112,8 +112,8 @@ public final class Voronoi {
     }
 
     // TODO: bug: if you call this before you call region(), something goes wrong :(
-    public List<Point> neighborSitesForSite(Point coord) {
-        List<Point> points = new ArrayList<Point>();
+    public List<Vector2d> neighborSitesForSite(Vector2d coord) {
+        List<Vector2d> points = new ArrayList<Vector2d>();
         Site site = _sitesIndexedByLocation.get(coord);
         if (site == null) {
             return points;
@@ -129,7 +129,7 @@ public final class Voronoi {
         return _sites.circles();
     }
 
-    private List<Edge> selectEdgesForSitePoint(Point coord, List<Edge> edgesToTest) {
+    private List<Edge> selectEdgesForSitePoint(Vector2d coord, List<Edge> edgesToTest) {
         List<Edge> filtered = new ArrayList<Edge>();
 
         for (Edge e : edgesToTest) {
@@ -146,8 +146,8 @@ public final class Voronoi {
 
         for (Edge edge : edges) {
             if (edge.isVisible()) {
-                Point p1 = edge.getClippedEnds().get(LR.LEFT);
-                Point p2 = edge.getClippedEnds().get(LR.RIGHT);
+                Vector2d p1 = edge.getClippedEnds().get(LR.LEFT);
+                Vector2d p2 = edge.getClippedEnds().get(LR.RIGHT);
                 segments.add(new LineSegment(p1, p2));
             }
         }
@@ -165,11 +165,11 @@ public final class Voronoi {
         return segments;
     }
 
-    public List<LineSegment> voronoiBoundaryForSite(Point coord) {
+    public List<LineSegment> voronoiBoundaryForSite(Vector2d coord) {
         return visibleLineSegments(selectEdgesForSitePoint(coord, _edges));
     }
 
-    public List<LineSegment> delaunayLinesForSite(Point coord) {
+    public List<LineSegment> delaunayLinesForSite(Vector2d coord) {
         return delaunayLinesForEdges(selectEdgesForSitePoint(coord, _edges));
     }
 
@@ -200,10 +200,10 @@ public final class Voronoi {
          }*/
     }
 
-    public List<Point> hullPointsInOrder() {
+    public List<Vector2d> hullPointsInOrder() {
         List<Edge> hullEdges = hullEdges();
 
-        List<Point> points = new ArrayList<Point>();
+        List<Vector2d> points = new ArrayList<Vector2d>();
         if (hullEdges.isEmpty()) {
             return points;
         }
@@ -224,18 +224,18 @@ public final class Voronoi {
         return points;
     }
 
-    public List<List<Point>> regions() {
+    public List<List<Vector2d>> regions() {
         return _sites.regions(_plotBounds);
     }
 
-    public List<Point> siteCoords() {
+    public List<Vector2d> siteCoords() {
         return _sites.siteCoords();
     }
 
     private void fortunesAlgorithm() {
         Site newSite, bottomSite, topSite, tempSite;
         Vertex v, vertex;
-        Point newintstar = null;
+        Vector2d newintstar = null;
         LR leftRight;
         Halfedge lbnd, rbnd, llbnd, rrbnd, bisector;
         Edge edge;
@@ -286,7 +286,7 @@ public final class Voronoi {
                     vertices.add(vertex);
                     heap.remove(lbnd);
                     lbnd.vertex = vertex;
-                    lbnd.ystar = vertex.getY() + Point.distance(newSite.getCoord(), vertex.getCoord());
+                    lbnd.ystar = vertex.getY() + Vector2d.distance(newSite.getCoord(), vertex.getCoord());
                     heap.insert(lbnd);
                 }
 
@@ -301,7 +301,7 @@ public final class Voronoi {
                 if ((vertex = Vertex.intersect(bisector, rbnd)) != null) {
                     vertices.add(vertex);
                     bisector.vertex = vertex;
-                    bisector.ystar = vertex.getY() + Point.distance(newSite.getCoord(), vertex.getCoord());
+                    bisector.ystar = vertex.getY() + Vector2d.distance(newSite.getCoord(), vertex.getCoord());
                     heap.insert(bisector);
                 }
 
@@ -341,13 +341,13 @@ public final class Voronoi {
                     vertices.add(vertex);
                     heap.remove(llbnd);
                     llbnd.vertex = vertex;
-                    llbnd.ystar = vertex.getY() + Point.distance(bottomSite.getCoord(), vertex.getCoord());
+                    llbnd.ystar = vertex.getY() + Vector2d.distance(bottomSite.getCoord(), vertex.getCoord());
                     heap.insert(llbnd);
                 }
                 if ((vertex = Vertex.intersect(bisector, rrbnd)) != null) {
                     vertices.add(vertex);
                     bisector.vertex = vertex;
-                    bisector.ystar = vertex.getY() + Point.distance(bottomSite.getCoord(), vertex.getCoord());
+                    bisector.ystar = vertex.getY() + Vector2d.distance(bottomSite.getCoord(), vertex.getCoord());
                     heap.insert(bisector);
                 }
             } else {
@@ -403,17 +403,17 @@ public final class Voronoi {
         return 0;
     }
 
-    public static int compareByYThenX(Site s1, Point s2) {
-        if (s1.getY() < s2.y) {
+    public static int compareByYThenX(Site s1, Vector2d s2) {
+        if (s1.getY() < s2.getY()) {
             return -1;
         }
-        if (s1.getY() > s2.y) {
+        if (s1.getY() > s2.getY()) {
             return 1;
         }
-        if (s1.getX() < s2.x) {
+        if (s1.getX() < s2.getX()) {
             return -1;
         }
-        if (s1.getX() > s2.x) {
+        if (s1.getX() > s2.getX()) {
             return 1;
         }
         return 0;

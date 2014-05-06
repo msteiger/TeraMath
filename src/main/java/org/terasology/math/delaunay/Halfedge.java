@@ -2,7 +2,7 @@ package org.terasology.math.delaunay;
 
 import java.util.Stack;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 
 final class Halfedge {
 
@@ -62,13 +62,13 @@ final class Halfedge {
         vertex = null;
     }
 
-    public boolean isLeftOf(Point p) {
+    public boolean isLeftOf(Vector2d p) {
         Site topSite;
         boolean rightOfSite, above, fast;
         double dxp, dyp, dxs, t1, t2, t3, yl;
 
         topSite = edge.getRightSite();
-        rightOfSite = p.x > topSite.getX();
+        rightOfSite = p.getX() > topSite.getX();
         if (rightOfSite && this.leftRight == LR.LEFT) {
             return true;
         }
@@ -77,14 +77,14 @@ final class Halfedge {
         }
 
         if (edge.a == 1.0) {
-            dyp = p.y - topSite.getY();
-            dxp = p.x - topSite.getX();
+            dyp = p.getY() - topSite.getY();
+            dxp = p.getX() - topSite.getX();
             fast = false;
             if ((!rightOfSite && edge.b < 0.0) || (rightOfSite && edge.b >= 0.0)) {
                 above = dyp >= edge.b * dxp;
                 fast = above;
             } else {
-                above = p.x + p.y * edge.b > edge.c;
+                above = p.getX() + p.getY() * edge.b > edge.c;
                 if (edge.b < 0.0) {
                     above = !above;
                 }
@@ -101,9 +101,9 @@ final class Halfedge {
                 }
             }
         } else /* edge.b == 1.0 */ {
-            yl = edge.c - edge.a * p.x;
-            t1 = p.y - yl;
-            t2 = p.x - topSite.getX();
+            yl = edge.c - edge.a * p.getX();
+            t1 = p.getY() - yl;
+            t2 = p.getX() - topSite.getX();
             t3 = yl - topSite.getY();
             above = t1 * t1 > t2 * t2 + t3 * t3;
         }

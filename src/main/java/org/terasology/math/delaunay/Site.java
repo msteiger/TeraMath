@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Stack;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 import org.terasology.math.geom.Polygon;
 import org.terasology.math.geom.Rectangle;
 
@@ -29,10 +29,10 @@ public final class Site implements ICoord {
     /** 
      * ordered list of points that define the region clipped to bounds:
      */
-    private List<Point> _region;
+    private List<Vector2d> _region;
 
     
-    public static Site create(Point p, int index, double weight) {
+    public static Site create(Vector2d p, int index, double weight) {
         return new Site(p, index, weight);
     }
 
@@ -78,21 +78,21 @@ public final class Site implements ICoord {
     }
     final private static double EPSILON = .005;
 
-    private static boolean closeEnough(Point p0, Point p1) {
-        return Point.distance(p0, p1) < EPSILON;
+    private static boolean closeEnough(Vector2d p0, Vector2d p1) {
+        return Vector2d.distance(p0, p1) < EPSILON;
     }
-    private Point _coord;
+    private Vector2d _coord;
 
     @Override
-    public Point getCoord() {
+    public Vector2d getCoord() {
         return _coord;
     }
 
-    public Site(Point p, int index, double weight) {
+    public Site(Vector2d p, int index, double weight) {
         init(p, index, weight);
     }
 
-    private Site init(Point p, int index, double weight) {
+    private Site init(Vector2d p, int index, double weight) {
         _coord = p;
         siteIndex = index;
         this.weight = weight;
@@ -158,7 +158,7 @@ public final class Site implements ICoord {
         return null;
     }
 
-    List<Point> region(Rectangle clippingBounds) {
+    List<Vector2d> region(Rectangle clippingBounds) {
         if (_edges == null || _edges.isEmpty()) {
             return Collections.emptyList();
         }
@@ -181,8 +181,8 @@ public final class Site implements ICoord {
         reorderer.dispose();
     }
 
-    private List<Point> clipToBounds(Rectangle bounds) {
-        List<Point> points = new ArrayList<Point>();
+    private List<Vector2d> clipToBounds(Rectangle bounds) {
+        List<Vector2d> points = new ArrayList<Vector2d>();
         int n = _edges.size();
         int i = 0;
         Edge edge;
@@ -212,17 +212,17 @@ public final class Site implements ICoord {
         return points;
     }
 
-    private void connect(List<Point> points, int j, Rectangle bounds, boolean closingUp) {
-        Point rightPoint = points.get(points.size() - 1);
+    private void connect(List<Vector2d> points, int j, Rectangle bounds, boolean closingUp) {
+        Vector2d rightPoint = points.get(points.size() - 1);
         Edge newEdge = _edges.get(j);
         LR newOrientation = _edgeOrientations.get(j);
         // the point that  must be connected to rightPoint:
-        Point newPoint = newEdge.getClippedEnds().get(newOrientation);
+        Vector2d newPoint = newEdge.getClippedEnds().get(newOrientation);
         if (!closeEnough(rightPoint, newPoint)) {
             // The points do not coincide, so they must have been clipped at the bounds;
             // see if they are on the same border of the bounds:
-            if (rightPoint.x != newPoint.x
-                    && rightPoint.y != newPoint.y) {
+            if (rightPoint.getX() != newPoint.getX()
+                    && rightPoint.getY() != newPoint.getY()) {
                 // They are on different borders of the bounds;
                 // insert one or two corners of bounds as needed to hook them up:
                 // (NOTE this will not be correct if the region should take up more than
@@ -235,69 +235,69 @@ public final class Site implements ICoord {
                     px = bounds.right;
                     if ((newCheck & BoundsCheck.BOTTOM) != 0) {
                         py = bounds.bottom;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.TOP) != 0) {
                         py = bounds.top;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.LEFT) != 0) {
-                        if (rightPoint.y - bounds.y + newPoint.y - bounds.y < bounds.height) {
+                        if (rightPoint.getY() - bounds.y + newPoint.getY() - bounds.y < bounds.height) {
                             py = bounds.top;
                         } else {
                             py = bounds.bottom;
                         }
-                        points.add(new Point(px, py));
-                        points.add(new Point(bounds.left, py));
+                        points.add(new Vector2d(px, py));
+                        points.add(new Vector2d(bounds.left, py));
                     }
                 } else if ((rightCheck & BoundsCheck.LEFT) != 0) {
                     px = bounds.left;
                     if ((newCheck & BoundsCheck.BOTTOM) != 0) {
                         py = bounds.bottom;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.TOP) != 0) {
                         py = bounds.top;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.RIGHT) != 0) {
-                        if (rightPoint.y - bounds.y + newPoint.y - bounds.y < bounds.height) {
+                        if (rightPoint.getY() - bounds.y + newPoint.getY() - bounds.y < bounds.height) {
                             py = bounds.top;
                         } else {
                             py = bounds.bottom;
                         }
-                        points.add(new Point(px, py));
-                        points.add(new Point(bounds.right, py));
+                        points.add(new Vector2d(px, py));
+                        points.add(new Vector2d(bounds.right, py));
                     }
                 } else if ((rightCheck & BoundsCheck.TOP) != 0) {
                     py = bounds.top;
                     if ((newCheck & BoundsCheck.RIGHT) != 0) {
                         px = bounds.right;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.LEFT) != 0) {
                         px = bounds.left;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.BOTTOM) != 0) {
-                        if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.width) {
+                        if (rightPoint.getX() - bounds.x + newPoint.getX() - bounds.x < bounds.width) {
                             px = bounds.left;
                         } else {
                             px = bounds.right;
                         }
-                        points.add(new Point(px, py));
-                        points.add(new Point(px, bounds.bottom));
+                        points.add(new Vector2d(px, py));
+                        points.add(new Vector2d(px, bounds.bottom));
                     }
                 } else if ((rightCheck & BoundsCheck.BOTTOM) != 0) {
                     py = bounds.bottom;
                     if ((newCheck & BoundsCheck.RIGHT) != 0) {
                         px = bounds.right;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.LEFT) != 0) {
                         px = bounds.left;
-                        points.add(new Point(px, py));
+                        points.add(new Vector2d(px, py));
                     } else if ((newCheck & BoundsCheck.TOP) != 0) {
-                        if (rightPoint.x - bounds.x + newPoint.x - bounds.x < bounds.width) {
+                        if (rightPoint.getX() - bounds.x + newPoint.getX() - bounds.x < bounds.width) {
                             px = bounds.left;
                         } else {
                             px = bounds.right;
                         }
-                        points.add(new Point(px, py));
-                        points.add(new Point(px, bounds.top));
+                        points.add(new Vector2d(px, py));
+                        points.add(new Vector2d(px, bounds.top));
                     }
                 }
             }
@@ -307,18 +307,18 @@ public final class Site implements ICoord {
             }
             points.add(newPoint);
         }
-        Point newRightPoint = newEdge.getClippedEnds().get(newOrientation.other());
+        Vector2d newRightPoint = newEdge.getClippedEnds().get(newOrientation.other());
         if (!closeEnough(points.get(0), newRightPoint)) {
             points.add(newRightPoint);
         }
     }
 
     public double getX() {
-        return _coord.x;
+        return _coord.x();
     }
 
     public double getY() {
-        return _coord.y;
+        return _coord.y();
     }
 
 }
@@ -338,18 +338,18 @@ final class BoundsCheck {
      * corresponding bounds lines
      *
      */
-    public static int check(Point point, Rectangle bounds) {
+    public static int check(Vector2d point, Rectangle bounds) {
         int value = 0;
-        if (point.x == bounds.left) {
+        if (point.getX() == bounds.left) {
             value |= LEFT;
         }
-        if (point.x == bounds.right) {
+        if (point.getX() == bounds.right) {
             value |= RIGHT;
         }
-        if (point.y == bounds.top) {
+        if (point.getY() == bounds.top) {
             value |= TOP;
         }
-        if (point.y == bounds.bottom) {
+        if (point.getY() == bounds.bottom) {
             value |= BOTTOM;
         }
         return value;

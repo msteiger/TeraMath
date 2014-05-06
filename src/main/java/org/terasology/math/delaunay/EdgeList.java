@@ -3,7 +3,7 @@ package org.terasology.math.delaunay;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 
 final class EdgeList {
 
@@ -72,12 +72,12 @@ final class EdgeList {
      * @return
      *
      */
-    public Halfedge edgeListLeftNeighbor(Point p) {
+    public Halfedge edgeListLeftNeighbor(Vector2d p) {
         int i, bucket;
         Halfedge halfEdge;
 
         /* Use hash table to get close to desired halfedge */
-        bucket = (int) ((p.x - _xmin) / _deltax * _hashsize);
+        bucket = (int) ((p.getX() - _xmin) / _deltax * _hashsize);
         if (bucket < 0) {
             bucket = 0;
         }

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.terasology.math.geom.LineSegment;
-import org.terasology.math.geom.Point;
+import org.terasology.math.geom.Vector2d;
 import org.terasology.math.geom.Rectangle;
 
 /**
@@ -32,7 +32,7 @@ public final class Edge {
      * Once clipVertices() is called, this HashMap will hold two Points
      * representing the clipped coordinates of the left and right ends...
      */
-    private final Map<LR, Point> clippedVertices = new EnumMap<LR, Point>(LR.class);
+    private final Map<LR, Vector2d> clippedVertices = new EnumMap<LR, Vector2d>(LR.class);
 
     /** 
      * The two input Sites for which this Edge is a bisector:
@@ -118,7 +118,7 @@ public final class Edge {
     }
 
     public double sitesDistance() {
-        return Point.distance(getLeftSite().getCoord(), getRightSite().getCoord());
+        return Vector2d.distance(getLeftSite().getCoord(), getRightSite().getCoord());
     }
 
     public static double compareSitesDistances_MAX(Edge edge0, Edge edge1) {
@@ -137,7 +137,7 @@ public final class Edge {
         return -compareSitesDistances_MAX(edge0, edge1);
     }
 
-    public Map<LR, Point> getClippedEnds() {
+    public Map<LR, Vector2d> getClippedEnds() {
         return clippedVertices;
     }
     
@@ -283,11 +283,11 @@ public final class Edge {
 
         clippedVertices.clear();
         if (vertex0 == leftVertex) {
-            clippedVertices.put(LR.LEFT, new Point(x0, y0));
-            clippedVertices.put(LR.RIGHT, new Point(x1, y1));
+            clippedVertices.put(LR.LEFT, new Vector2d(x0, y0));
+            clippedVertices.put(LR.RIGHT, new Vector2d(x1, y1));
         } else {
-            clippedVertices.put(LR.RIGHT, new Point(x0, y0));
-            clippedVertices.put(LR.LEFT, new Point(x1, y1));
+            clippedVertices.put(LR.RIGHT, new Vector2d(x0, y0));
+            clippedVertices.put(LR.LEFT, new Vector2d(x1, y1));
         }
     }
 }
